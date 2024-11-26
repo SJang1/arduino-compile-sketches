@@ -21,6 +21,8 @@ import semver
 import yaml
 import yaml.parser
 
+from pathlib import Path
+
 
 def main():
     if "INPUT_SIZE-REPORT-SKETCH" in os.environ:
