@@ -21,8 +21,6 @@ import semver
 import yaml
 import yaml.parser
 
-from pathlib import Path
-
 
 def main():
     if "INPUT_SIZE-REPORT-SKETCH" in os.environ:
@@ -1580,38 +1578,24 @@ def path_relative_to_workspace(path):
     return relative_path
 
 
-def absolute_path(path: str) -> Path:
-    """
-    Converts a given path to its absolute equivalent. If the path is relative, it is assumed to be relative to the
-    'GITHUB_WORKSPACE' environment variable, typically the root of the repository in GitHub Actions.
+def absolute_path(path):
+    """Returns the absolute path equivalent. Relative paths are assumed to be relative to the workspace of the action's
+    Docker container (the root of the repository).
 
-    Args:
-        path (str): The path to convert to an absolute path.
-
-    Returns:
-        pathlib.Path: The absolute path.
-
-    Raises:
-        EnvironmentError: If 'GITHUB_WORKSPACE' is not set for relative paths.
-        FileNotFoundError: If the resolved path does not exist.
+    Keyword arguments:
+    path -- the path to make absolute
     """
     # Make path into a pathlib.Path object, with ~ expanded
-    path = Path(path).expanduser()
-
+    path = pathlib.Path(path).expanduser()
     if not path.is_absolute():
-        # Retrieve GITHUB_WORKSPACE with error handling
-        github_workspace = os.getenv("GITHUB_WORKSPACE")
-        if not github_workspace:
-            raise EnvironmentError("GITHUB_WORKSPACE environment variable is not set.")
-        path = Path(github_workspace, path)
+        # path is relative
+        path = pathlib.Path(os.environ["GITHUB_WORKSPACE"], path)
 
     # Resolve .. and symlinks to get a true absolute path
-    try:
-        path = path.resolve(strict=True)
-    except FileNotFoundError:
-        raise FileNotFoundError(f"The path '{path}' does not exist.")
+    path = path.resolve()
 
     return path
+
 
 def get_list_from_multiformat_input(input_value):
     """For backwards compatibility with the legacy API, some inputs support a space-separated list format in addition to
