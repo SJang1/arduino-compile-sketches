@@ -1578,24 +1578,38 @@ def path_relative_to_workspace(path):
     return relative_path
 
 
-def absolute_path(path):
-    """Returns the absolute path equivalent. Relative paths are assumed to be relative to the workspace of the action's
-    Docker container (the root of the repository).
+def absolute_path(path: str) -> Path:
+    """
+    Converts a given path to its absolute equivalent. If the path is relative, it is assumed to be relative to the
+    'GITHUB_WORKSPACE' environment variable, typically the root of the repository in GitHub Actions.
 
-    Keyword arguments:
-    path -- the path to make absolute
+    Args:
+        path (str): The path to convert to an absolute path.
+
+    Returns:
+        pathlib.Path: The absolute path.
+
+    Raises:
+        EnvironmentError: If 'GITHUB_WORKSPACE' is not set for relative paths.
+        FileNotFoundError: If the resolved path does not exist.
     """
     # Make path into a pathlib.Path object, with ~ expanded
-    path = pathlib.Path(path).expanduser()
+    path = Path(path).expanduser()
+
     if not path.is_absolute():
-        # path is relative
-        path = pathlib.Path(os.environ["GITHUB_WORKSPACE"], path)
+        # Retrieve GITHUB_WORKSPACE with error handling
+        github_workspace = os.getenv("GITHUB_WORKSPACE")
+        if not github_workspace:
+            raise EnvironmentError("GITHUB_WORKSPACE environment variable is not set.")
+        path = Path(github_workspace, path)
 
     # Resolve .. and symlinks to get a true absolute path
-    path = path.resolve()
+    try:
+        path = path.resolve(strict=True)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The path '{path}' does not exist.")
 
     return path
-
 
 def get_list_from_multiformat_input(input_value):
     """For backwards compatibility with the legacy API, some inputs support a space-separated list format in addition to
